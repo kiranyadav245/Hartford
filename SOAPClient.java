@@ -18,9 +18,9 @@ import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
 
 
-public class SOAPClientSAAJ {
+public class SOAPClient {
 
-    // SAAJ - SOAP Client Testing
+    //  SOAP Client Testing
     public static void main(String args[]) {
         /*
             The example below requests from the Web Service at:
