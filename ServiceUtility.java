@@ -14,6 +14,10 @@ import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -23,7 +27,7 @@ import org.xml.sax.InputSource;
 public class ServiceUtility {
 	public static void main(String[] args) throws Exception {
 		ServiceUtility serviceUtility = new ServiceUtility();
-		Scanner scanner = new Scanner(new File("C:/Selenium/request.xml"));
+		Scanner scanner = new Scanner(new File("src/request/request.xml"));
 		//file to String
 		String xml = scanner
 				.useDelimiter("\\Z").next();
@@ -31,7 +35,11 @@ public class ServiceUtility {
 		Document document = serviceUtility.convertStringToDocument(xml);
 
 		// xpath to find in org.w3c.dom.Document object
-		String elementName = "ns0271:ProductCode";
+		String elementName = "ns0225:ExternalKey_Ext";
+//		String xPath = "/soapenv:Envelope/soapenv:Body/hig:createOrUpdateDraftSubmission[0]/hig:draftSubmissionRequestMessage/req:DraftSubmissionRequestTransaction/ns0282:PolicyPeriod/ns0271:Account/ns0255:AccountContacts/ns0255:Entry/ns0224:Contact/ns0225:ExternalKey_Ext";
+		String xPath="Envelope/Header[2]/authentication/password";
+		System.out.println(serviceUtility.getElementByXPath(document, xPath));
+		
 //		getting element value from org.w3c.dom.Document using element id
 		String nodeValueByElementName = serviceUtility.getNodeValueByElementName(document, elementName);
 		System.out.println(nodeValueByElementName);
@@ -45,11 +53,20 @@ public class ServiceUtility {
 		System.out.println(f);
 
 	}
+	
+	public String getElementByXPath(Document document,
+			String path) throws Exception {
+		XPath xPath =  XPathFactory.newInstance().newXPath();
+		Node n = (Node) xPath.compile(path).evaluate(document, XPathConstants.NODE);
+		String value = xPath.compile(path).evaluate(document);
+		return value;
+		
+	}
 
 	public File convertStringToFile(String documentToString) {
-		File fold = new File("C:/Selenium/request.xml");
+		File fold = new File("src/request/request.xml");
 		fold.delete();
-		File fnew = new File("C:/Selenium/request1.xml");
+		File fnew = new File("src/request/request1.xml");
 		System.out.println(documentToString);
 
 		try {
@@ -79,8 +96,59 @@ public class ServiceUtility {
 		}
 		return null;
 	}
+	
+	public String getElementValue(org.w3c.dom.Node node) {
+		return node.getTextContent();
+	}
+	
+	
+	//temporary method - not working
+	public org.w3c.dom.Node getElementByXPaths(Document document,
+			String xPath) {
+		if(xPath != null){
+			String[] xPaths = xPath.split("/");
+			Node node = null;
+			for(int index=0; index < xPaths.length;index++){
+				String tagName = getTagNameOnly(xPaths[index]);
+				Integer position = null;
+				if(tagName != null){
+					position = getIndexPosition(xPaths[index]);
+				}
+				if(index == 0)
+					node = getElementByTagName(document , tagName);
+				else {
+					node = getElementByTagName(node, tagName, position);
+				}
+				if(index == xPaths.length-1){
+					return node;
+				}
+				
+				
+			}
+		}
+		return null;
+	}
+	
+	private String getTagNameOnly(String tag) {
+		if(tag != null && tag.contains("[")){
+			return tag.substring(0, tag.indexOf("["));
+		}
+		return tag;
+	}
 
-	public static org.w3c.dom.Node getElementByTagName(Document document,
+	private Integer getIndexPosition(String tag) {
+		if(tag != null && tag.contains("[")){
+			String position = tag.substring(tag.indexOf("[")+1, tag.indexOf("]"));
+			try{
+				return Integer.parseInt(position);
+			}catch(Exception e){
+				System.out.println("Invalid XPath");
+			}
+		}
+		return null;
+	}
+
+	public org.w3c.dom.Node getElementByTagName(Document document,
 			String elementName) {
 		NodeList nodeList = document.getElementsByTagName("*");
 		for (int i = 0; i < nodeList.getLength(); i++) {
@@ -88,6 +156,27 @@ public class ServiceUtility {
 			System.out.println(node.getNodeName());
 			if (elementName.equalsIgnoreCase(node.getNodeName())) {
 				return node;
+			}
+		}
+		return null;
+	}
+	
+	public org.w3c.dom.Node getElementByTagName(Node node,
+			String elementName, Integer index) {
+		NodeList nodeList = node.getChildNodes();
+		int count = -1;
+		for (int i = 0; i < nodeList.getLength(); i++) {
+			org.w3c.dom.Node childNode = nodeList.item(i);
+			if(!"#text".equals(childNode.getNodeName()))
+				count++;
+			else
+				continue;
+			System.out.println(childNode.getNodeName());
+			if (elementName.equalsIgnoreCase(childNode.getNodeName())) {
+				if(index == null)
+					return node;
+				if(index != null && index == count)
+					return node;
 			}
 		}
 		return null;
